@@ -10,6 +10,7 @@
 (let loop ()
   (define-values (len hostname src-port)
     (udp-receive! the-socket receive-buffer))
+  (printf "current seconds: ~v\n" (current-seconds))
   (printf "len: ~v\nhostname: ~v\nsrc-port: ~v\n" len hostname src-port)
   (printf "received buffer: ~v\n" receive-buffer)
   (newline)

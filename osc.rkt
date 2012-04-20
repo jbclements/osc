@@ -3,7 +3,8 @@
 ;; Copyright 2012 John Clements (clements@racket-lang.org)
 ;; Released under a BSD license
 
-(require rackunit)
+(require rackunit
+         "osc-time.rkt")
 
 (provide (contract-out [make-osc-message
                         (->* (osc-address?) 
@@ -27,22 +28,39 @@
 
 ;; given a list of address/argument sequences, format a byte-string
 ;; representing an OSC "bundle"
-#;(define (make-osc-bundle messages)
+(define (make-osc-bundle timestamp messages)
+  (define timestamp-bytes (osc-date->bytes timestamp))
   (define pre-messages
-    (for/list ([message messages]) (apply make-osc-pre-message message)))
-  (define out-buf
-    (make-bytes (apply + (map pre-message-length pre-messages))))
-  (let loop ([offset 0] [pre-messages pre-messages])
-    (cond [(empty? pre-messages) #f]
-          [else 
-           (define new-offset
-             (render-pre-message! out-buf offset (first pre-messages)))
-           (loop new-offset (rest pre-messages))])))
+    (for/list ([message messages])
+      (apply make-osc-pre-message message)))
+  (define pre-messages-with-lengths
+    (map decorate-pre-message pre-messages))
+  (define header-pre-message (list (list #"#bundle\0" timestamp-bytes)))
+  (define whole-pre-message
+    (apply append (cons header-pre-message pre-messages-with-lengths)))
+  (render-pre-message whole-pre-message))
 
 
 ;; given an address and a list of arguments, format a byte string
 ;; in the OSC format
 (define (make-osc-message address . arguments)
+  (render-pre-message (apply make-osc-pre-message address arguments)))
+
+;; a pre-message is a list of lists of byte strings.
+;; in order to cut down on premature byte-string-appending,
+;; we'll use a list of byte strings to represent byte strings that will
+;; be appended together in the output along with padding to 
+;; bring them to a length that is is a multiple of 4
+
+;; given a pre-message, add a "length" byte-string to the front,
+;; so it can be used as part of a bundle
+(define (decorate-pre-message pre-message)
+  (define len (pre-message-length pre-message))
+  (cons (list (integer->integer-bytes len 4 #f #t))
+        pre-message))
+
+;; given an address and a list of elements, produce a pre-message
+(define (make-osc-pre-message address . arguments)
   (define address-byteses (list (address->bytes address) #"\0"))
   (define arg-types-and-bytes (map arg->type-and-bytes arguments))
   (define arg-type-bytes (bytes-append
@@ -51,15 +69,9 @@
                                  (map first arg-types-and-bytes))
                           #"\0"))
   (define arg-byteseses (map second arg-types-and-bytes))
-  (define elements (cons address-byteses
-                         (cons (list arg-type-bytes)
-                               arg-byteseses)))
-  (define msg-len (for/sum ((elt elements))
-                    (round-up-to-4
-                     (apply + (map bytes-length elt)))))
-  (define out-buf (make-bytes msg-len 0))
-  (render-pre-message! out-buf 0 elements)
-  out-buf)
+  (cons address-byteses
+        (cons (list arg-type-bytes)
+              arg-byteseses)))
 
 ;; a pre-message is a list of lists of byte-strings. Rendering a
 ;; pre-message into a bytes adds padding out to length 4 after
@@ -69,12 +81,12 @@
   (for/sum ([byteses pre-message])
     (round-up-to-4 (apply + (map bytes-length byteses)))))
 
-;; render the pre-message into the buffer at the specified
-;; offset. return the new offset.
-(define (render-pre-message! tgt-bytes offset pre-message)
-  (let loop ([offset offset] [elements pre-message])
+;; render the pre-message into a buffer
+(define (render-pre-message pre-message)
+  (define tgt-bytes (make-bytes (pre-message-length pre-message) 0))
+  (let loop ([offset 0] [elements pre-message])
     (cond 
-      [(empty? elements) offset]
+      [(empty? elements) #f]
       [else
        (let inner-loop ([offset offset] [byteses (first elements)])
          (cond [(empty? byteses)
@@ -88,7 +100,8 @@
                [else
                 (bytes-copy! tgt-bytes offset (first byteses))
                 (inner-loop (+ offset (bytes-length (first byteses)))
-                            (rest byteses))]))])))
+                            (rest byteses))]))]))
+  tgt-bytes)
 
 
 
@@ -249,10 +262,24 @@
                #"derple"
                (bytes 0 0)))
 
-#;(check-equal? (make-osc-bundle `(("/abc/def" 2.278 14)
-                                 ("/ghi" #"hello" #"my friend")))
+(check-equal? (make-osc-bundle 'now
+                               `((#"/abc/def" 2.278 14)
+                                 (#"/ghi" #"hello" #"my friend")))
               (bytes-append
                #"#bundle\0"
+               (bytes 0 0 0 0 0 0 0 1)
+               
+               (bytes 0 0 0 24)
+               #"/abc/def\0\0\0\0"
+               #",fi\0"
+               #"@\21\312\301"
+               (bytes 0 0 0 14)
+               
+               (bytes 0 0 0 32)
+               #"/ghi\0\0\0\0"
+               #",ss\0"
+               #"hello\0\0\0"
+               #"my friend\0\0\0"
                ))
 
 
