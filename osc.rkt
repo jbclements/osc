@@ -4,7 +4,8 @@
 ;; Released under a BSD license
 
 (require rackunit
-         "osc-time.rkt")
+         "osc-time.rkt"
+         "osc-common.rkt")
 
 (provide (contract-out [make-osc-message
                         (->* (osc-address?) 
@@ -199,16 +200,6 @@
                            osc-address-bytes?))
 
 
-(define (round-up-to-4-diff i)
-  (match (modulo i 4)
-    [0 0]
-    [other (- 4 other)]))
-
-(define (round-up-to-4 i)
-  (+ i (round-up-to-4-diff i)))
-
-
-
 
 (check-equal? (pre-message-length '((#"" #"a")
                                     (#"a" #"bc" #"d")))
@@ -225,9 +216,6 @@
                           (bytes 79 197 0 14 203)
                           (bytes 0 0 0))))
 
-
-(check-equal? (round-up-to-4 18) 20)
-(check-equal? (round-up-to-4 12) 12)
 
 (check-equal? (osc-address-bytes-element? #"casper-the-friendly-ghost") #t)
 (check-equal? (osc-address-bytes-element? #"casper-the friendly-ghost") #f)
