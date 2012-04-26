@@ -21,3 +21,8 @@ start a tone.  When you hit "return" a second time, it will try to
 stop.
 
 
+Note!: The data that appears in these messages is scraped from a wireshark
+capture of a supercollider session; I can't find good documentation for
+the SuperCollider format (yet?). This package provides OSC translation,
+but treats Supercollider's use of OSC essentially as a black box. Any
+pointers appreciated.
