@@ -4,48 +4,48 @@
 ;; Released under a BSD license
 
 (require rackunit
+         "osc-defns.rkt"
          "osc-time.rkt"
          "osc-common.rkt")
 
-(provide (contract-out [make-osc-message
-                        (->* (osc-address?) 
-                             #:rest (listof osc-value?)
-                             bytes?)]))
+(provide (contract-out [osc-element->bytes
+                        (-> osc-element? bytes?)]))
 
-;; an OSC value is either 
-;; - an integer representable as a signed 32-bit integer
-;; - an inexact real,
-;; - a byte-string, or
-;; - (list 'blob byte-string)
-;; ... the others are optional, and (for now) ignored
 
-;; see http://opensoundcontrol.org/spec-1_0 for details
 
-(define (osc-value? v)
-  (or (int32? v)
-      (float32? v)
-      (bytes? v)
-      (blob? v)))
+
+(define (osc-element->bytes element)
+  (render-pre-message (osc-element->pre-message element)))
+
+(define (osc-element->pre-message element)
+  (match element
+    [(osc-message address args)
+     (osc-message->pre-message address args)]
+    [(osc-bundle timestamp elements)
+     (osc-bundle->pre-message timestamp elements)]))
+
 
 ;; given a list of address/argument sequences, format a byte-string
 ;; representing an OSC "bundle"
-(define (make-osc-bundle timestamp messages)
+(define (osc-bundle->bytes timestamp messages)
+  (render-pre-message (osc-bundle->pre-message timestamp messages)))
+
+(define (osc-bundle->pre-message timestamp messages)
   (define timestamp-bytes (osc-date->bytes timestamp))
-  (define pre-messages
-    (for/list ([message messages])
-      (apply make-osc-pre-message message)))
+  (define pre-messages (map osc-element->pre-message messages))
   (define pre-messages-with-lengths
     (map decorate-pre-message pre-messages))
   (define header-pre-message (list (list #"#bundle\0" timestamp-bytes)))
   (define whole-pre-message
     (apply append (cons header-pre-message pre-messages-with-lengths)))
-  (render-pre-message whole-pre-message))
+  whole-pre-message)
 
 
 ;; given an address and a list of arguments, format a byte string
 ;; in the OSC format
-(define (make-osc-message address . arguments)
-  (render-pre-message (apply make-osc-pre-message address arguments)))
+(define (osc-message->bytes address arguments)
+  (render-pre-message 
+   (osc-message->pre-message address arguments)))
 
 ;; a pre-message is a list of lists of byte strings.
 ;; in order to cut down on premature byte-string-appending,
@@ -61,7 +61,7 @@
         pre-message))
 
 ;; given an address and a list of elements, produce a pre-message
-(define (make-osc-pre-message address . arguments)
+(define (osc-message->pre-message address arguments)
   (define address-byteses (list (address->bytes address) #"\0"))
   (define arg-types-and-bytes (map arg->type-and-bytes arguments))
   (define arg-type-bytes (bytes-append
@@ -128,7 +128,11 @@
                              #"\0"))]
         [(float32? arg) (list #"f"
                               (list
-                               (real->floating-point-bytes arg 4 #t)))]
+                               (real->floating-point-bytes 
+                                arg 4 #t)))]
+        [(osc-double? arg)
+         (list #"d" (list (real->floating-point-bytes 
+                           (second arg) 8 #t)))]
         [(blob? arg) 
          (let ()
            (define the-bytes (second arg))
@@ -147,35 +151,6 @@
 
 
 
-
-(define (int32? i)
-  (and (exact-integer? i)
-       (< #x-80000000 i #x7fffffff)))
-
-(define (float32? f)
-  (and (number? f)
-       (inexact-real? f)))
-
-(define (blob? v)
-  (match v
-    [(list 'blob (? bytes? v))
-     ;; unclear whether unsigned ints are 
-     ;; used for the lengths of blobs:
-     (< (bytes-length v) #x7fffffff)]
-    [else #f]))
-
-
-
-
-
-
-
-(check-equal? (blob? '(blob #"272oue3")) #t)
-(check-equal? (blob? '(blob 14)) #f)
-
-(check-equal? (int32? 342) #t)
-(check-equal? (int32? 32324212142) #f)
-(check-equal? (int32? -24) #t)
 
 
 ;; an osc address starts with a slash, and then has a sequence
@@ -237,9 +212,11 @@
 (check-equal? (address->bytes #"/abc/def") #"/abc/def")
 (check-equal? (address->bytes (list #"abc" #"def")) #"/abc/def")
 
-(check-equal? (make-osc-message #"/abc/def" 3 6 2.278 
-                                #"froggy"
-                                `(blob #"derple"))
+(check-equal? (osc-message->bytes #"/abc/def"
+                                  (list
+                                   3 6 2.278 
+                                   #"froggy"
+                                   `(blob #"derple")))
               (bytes-append 
                #"/abc/def\000\000\000\000,iifsb\0\0"
                (bytes 0 0 0 3)
@@ -250,9 +227,15 @@
                #"derple"
                (bytes 0 0)))
 
-(check-equal? (make-osc-bundle 'now
-                               `((#"/abc/def" 2.278 14)
-                                 (#"/ghi" #"hello" #"my friend")))
+;; regression test:
+(check-equal?
+ (osc-message->bytes #"/abc" '((d 347987.2792870)))
+ #"/abc\0\0\0\0,d\0\0A\25=M\35\375iM")
+
+(check-equal? (osc-bundle->bytes 
+               'now
+               (list (osc-message #"/abc/def" (list 2.278 14))
+                     (osc-message #"/ghi" (list #"hello" #"my friend"))))
               (bytes-append
                #"#bundle\0"
                (bytes 0 0 0 0 0 0 0 1)
@@ -269,6 +252,46 @@
                #"hello\0\0\0"
                #"my friend\0\0\0"
                ))
+
+(define test-message-1 (osc-message #"/a/b" (list 257)))
+(check-equal? (osc-element->bytes test-message-1)
+              #"/a/b\0\0\0\0,i\0\0\0\0\001\001")
+(define test-message-1-bytes (osc-element->bytes test-message-1))
+(define test-message-2 (osc-message #"/z" (list #"woohoo" '(blob #"z"))))
+(define test-message-2-bytes (osc-element->bytes test-message-2))
+
+(check-equal? (osc-element->bytes (osc-bundle 'now (list test-message-1
+                                                         test-message-2)))
+              (bytes-append
+               #"#bundle\0"
+               (bytes 0 0 0 0 0 0 0 1)
+               (bytes 0 0 0 16)
+               test-message-1-bytes
+               (bytes 0 0 0 (bytes-length test-message-2-bytes))
+               test-message-2-bytes))
+
+;; test of bundles within bundles:
+
+(check-equal? (osc-element->bytes 
+               (osc-bundle 'now (list test-message-1
+                                      (osc-bundle 
+                                       'now
+                                       (list test-message-2
+                                             test-message-1)))))
+              (bytes-append
+               #"#bundle\0"
+               (bytes 0 0 0 0 0 0 0 1)
+               (bytes 0 0 0 16)
+               test-message-1-bytes
+               (bytes 0 0 0 (+ 8 8 8 16
+                               (bytes-length test-message-2-bytes)))
+               #"#bundle\0"
+               (bytes 0 0 0 0 0 0 0 1)
+               (bytes 0 0 0 (bytes-length test-message-2-bytes))
+               test-message-2-bytes
+               (bytes 0 0 0 16)
+               test-message-1-bytes))
+;; test of timestamps... oh. Can't do that until we are sure about seconds.
 
 
 
