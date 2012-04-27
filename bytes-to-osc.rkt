@@ -150,6 +150,7 @@
 
 
 (module+ test
+  (require rackunit)
   (check-equal? (call-with-values 
                  (lambda () (parse-string-from #"abcdef\0ghi" 2))
                  list)
