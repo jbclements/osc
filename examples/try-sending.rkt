@@ -6,9 +6,9 @@
 
 (require racket/udp
          racket/runtime-path
-         "../osc.rkt"
+         "../osc-to-bytes.rkt"
          "../osc-defns.rkt"
-         "../osc-parse.rkt")
+         "../bytes-to-osc.rkt")
 
 (define-runtime-path here ".")
 

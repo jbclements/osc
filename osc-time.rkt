@@ -3,8 +3,8 @@
 ;; Copyright 2012 John Clements (clements@racket-lang.org)
 ;; this code is released under a BSD license
 
-(require racket/date 
-         rackunit)
+(require racket/date
+         "osc-defns.rkt")
 
 (provide (contract-out 
           [date->osc-date (-> date? inexact-real? osc-date?)]
@@ -32,12 +32,6 @@
 ;; integers in the range 0 - #xffffffff,
 ;; or the symbol 'now for the special "now" value.
 
-(define (uint32? n)
-  (and (exact-integer? n) 
-       (<= 0 n #xffffffff)))
-
-(define osc-date? (or/c (list/c uint32? uint32?)
-                        'now))
 
 (define (8bytes? b)
   (and (bytes? b) (= (bytes-length b) 8)))
@@ -83,33 +77,34 @@
            (integer-bytes->integer (subbytes bytes 4 8) #f #t))]))
 
 ;; TESTS
-
-
-(check-equal? (osc-date->bytes 'now)
-              (bytes 0 0 0 0 0 0 0 1))
-(check-equal? (osc-date->bytes (list 9 #x03100000))
-              (bytes 0 0 0 9 3 16 0 0))
-(check-equal? (bytes->osc-date (bytes 0 0 0 0 0 0 0 1)) 'now)
-(check-equal? (bytes->osc-date (bytes 0 0 0 9 3 16 0 0))
-              (list 9 #x03100000))
-
-;; round-trip test
-(check-equal? (osc-date->date-and-frac
-               (date->osc-date (seconds->date
-                                (find-seconds 2 4 13 27 3 1997)) 
-                               (+ 0.5 (expt 0.5 8))))
-              (list
-               (seconds->date
-                (find-seconds 2 4 13 27 3 1997)) 
-               (+ 0.5 (expt 0.5 8))))
-;; deeper round-trip test
-(check-equal? (osc-date->date-and-frac
-               (bytes->osc-date
-                (osc-date->bytes
+(module+ test
+  
+  (require rackunit)
+  (check-equal? (osc-date->bytes 'now)
+                (bytes 0 0 0 0 0 0 0 1))
+  (check-equal? (osc-date->bytes (list 9 #x03100000))
+                (bytes 0 0 0 9 3 16 0 0))
+  (check-equal? (bytes->osc-date (bytes 0 0 0 0 0 0 0 1)) 'now)
+  (check-equal? (bytes->osc-date (bytes 0 0 0 9 3 16 0 0))
+                (list 9 #x03100000))
+  
+  ;; round-trip test
+  (check-equal? (osc-date->date-and-frac
                  (date->osc-date (seconds->date
                                   (find-seconds 2 4 13 27 3 1997)) 
-                                 (+ 0.5 (expt 0.5 8))))))
-              (list
-               (seconds->date
-                (find-seconds 2 4 13 27 3 1997)) 
-               (+ 0.5 (expt 0.5 8))))
+                                 (+ 0.5 (expt 0.5 8))))
+                (list
+                 (seconds->date
+                  (find-seconds 2 4 13 27 3 1997)) 
+                 (+ 0.5 (expt 0.5 8))))
+  ;; deeper round-trip test
+  (check-equal? (osc-date->date-and-frac
+                 (bytes->osc-date
+                  (osc-date->bytes
+                   (date->osc-date (seconds->date
+                                    (find-seconds 2 4 13 27 3 1997)) 
+                                   (+ 0.5 (expt 0.5 8))))))
+                (list
+                 (seconds->date
+                  (find-seconds 2 4 13 27 3 1997)) 
+                 (+ 0.5 (expt 0.5 8)))))
