@@ -1,7 +1,7 @@
 #lang racket
 
-(require "osc-parse.rkt"
-         "osc-defns.rkt")
+(require "../bytes-to-osc.rkt"
+         "../osc-defns.rkt")
 
 ;; read libpcap files.
 

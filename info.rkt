@@ -12,7 +12,7 @@
 (define release-notes '((p "Initial Release!")))
 
 ;; don't compile the stuff in the berkeley subdirectory.
-(define compile-omit-paths '("berkeley"))
+(define compile-omit-paths '("berkeley-libs"))
 
 ;; planet-specific:
 (define repositories '("4.x"))
