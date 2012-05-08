@@ -52,7 +52,7 @@
 (define parsed (for/list ([d packet-datas]
                      [i (in-naturals)])
                  (printf "~v\n" i)
-                 (parse-osc-bytes d)))
+                 (bytes->osc-element d)))
 
 (define (not-status data)
   (match data

@@ -7,23 +7,23 @@
          "osc-defns.rkt"
          "osc-time.rkt")
 
-(provide parse-osc-bytes)
+(provide bytes->osc-element)
 
 ;; this file contains a function that takes a bytes-string
 ;; and parses it into an OSC element. See "osc-defns.rkt"
 ;; for a definition of what makes an OSC element.
 
-(define (parse-osc-bytes bytes)
+(define (bytes->osc-element bytes)
   ;; could be a contract:
   (when (or (not (bytes? bytes))
             (= (bytes-length bytes) 0)
             (not (= (modulo (bytes-length bytes) 4) 0)))
-    (raise-type-error 'parse-osc-bytes 
+    (raise-type-error 'bytes->osc-element 
                       "non-empty byte string of length divisible by 4"
                        0 bytes))
-  (parse-osc-bytes/offset bytes 0 (bytes-length bytes)))
+  (bytes->osc-element/offset bytes 0 (bytes-length bytes)))
 
-(define (parse-osc-bytes/offset bytes offset stop-len)
+(define (bytes->osc-element/offset bytes offset stop-len)
   (match (bytes-ref bytes offset)
     [35 ;; the # char
      (parse-bundle bytes offset stop-len)]
@@ -31,7 +31,7 @@
      (parse-message (subbytes bytes offset stop-len))]
     [other
      (raise-type-error 
-      'parse-osc-bytes
+      'bytes->osc-element
       "byte string beginning with # or /"
       0 bytes)]))
 
@@ -42,7 +42,7 @@
                                (+ offset 8)
                                stop-len)
                    #"#bundle\0")
-    (error 'parse-osc-bytes
+    (error 'bytes->osc-element
            "bundle didn't begin with #bundle at offset ~s in input: ~e"
            offset bytes))
   (define timestamp (bytes->osc-date
@@ -69,7 +69,7 @@
     (error 'parse-length-and-element
            "bundle element length ~s too large for containing bundle"
            length))
-  (define element (parse-osc-bytes/offset bytes (+ offset 4)
+  (define element (bytes->osc-element/offset bytes (+ offset 4)
                                           (+ offset 4 length)))
   (values element (+ offset 4 length)))
 
@@ -82,7 +82,7 @@
   (define-values (type-str-bytes offset3)
     (parse-string-from bytes offset2))
   (unless (eq? (bytes-ref type-str-bytes 0) 44)
-    (error 'parse-osc-bytes
+    (error 'bytes->osc-element
            "expected comma to begin type string at offset ~v in ~e"
            offset2 bytes))
   (define type-chars (rest (bytes->list type-str-bytes)))
@@ -156,22 +156,22 @@
                  list)
                 (list #"cdef" 8))
   
-  (check-equal? (parse-osc-bytes #"/quit\0\0\0,s\0\0all done now\0\0\0\0")
+  (check-equal? (bytes->osc-element #"/quit\0\0\0,s\0\0all done now\0\0\0\0")
                 (osc-message #"/quit" (list #"all done now")))
   
-  (check-equal? (parse-osc-bytes #"/zbx\0\0\0\0,i\0\0\0\0\0\"")
+  (check-equal? (bytes->osc-element #"/zbx\0\0\0\0,i\0\0\0\0\0\"")
                 (osc-message #"/zbx" (list 34)))
   
-  (check-equal? (parse-osc-bytes #"/abc\0\0\0\0,f\0\0J*\321\274")
+  (check-equal? (bytes->osc-element #"/abc\0\0\0\0,f\0\0J*\321\274")
                 (osc-message #"/abc" (list 2798703.0)))
   
-  (check-equal? (parse-osc-bytes #"/def\0\0\0\0,b\0\0\0\0\0\bhoho\0\09\27")
+  (check-equal? (bytes->osc-element #"/def\0\0\0\0,b\0\0\0\0\0\bhoho\0\09\27")
                 (osc-message #"/def" (list `(blob #"hoho\0\09\27"))))
   
-  (check-equal? (parse-osc-bytes #"/abc\0\0\0\0,d\0\0A\25=M\35\375iM")
+  (check-equal? (bytes->osc-element #"/abc\0\0\0\0,d\0\0A\25=M\35\375iM")
                 (osc-message #"/abc" `((d 347987.2792870))))
   
-  (check-equal? (parse-osc-bytes 
+  (check-equal? (bytes->osc-element 
                  #"/ab/dob\0,bb\0\0\0\0\00512345\0\0\0\0\0\0\00567890\0\0\0")
                 (osc-message #"/ab/dob" `((blob #"12345") (blob #"67890"))))
   
@@ -179,7 +179,7 @@
   (define test-message-2 (osc-message #"/z" (list #"woohoo" '(blob #"z"))))
   
   (check-equal?
-   (parse-osc-bytes
+   (bytes->osc-element
     (bytes-append
      #"#bundle\0\0\0\0\0\0\0\0\1\0\0\0\20/a/b\0\0\0\0,i\0\0\0\0\1\1\0\0\0@"
      #"#bundle\0\0\0\0\0\0\0\0\1\0\0\0\30/z\0\0,sb\0"
@@ -192,7 +192,7 @@
                                  test-message-1))
                           test-message-2)))
   
-  #;(parse-osc-bytes
+  #;(bytes->osc-element
      (bytes-append
       #"/status.reply\0\0\0,iiiiiffdd\0\0\0\0\0\1\0\0\0\0\0\0\0\0\0\0"
       #"\0\1\0\0\0\0=.U\314=\356l\30@\345\210\200\0\0\0\0@\345\210\203"

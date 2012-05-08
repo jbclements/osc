@@ -370,3 +370,9 @@
 
 
 
+(osc-element->bytes 
+ (osc-message #"/abc/def"
+              (list
+               3 6 2.278 
+               #"froggy"
+               `(blob #"derple"))))

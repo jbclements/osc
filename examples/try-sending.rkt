@@ -38,7 +38,7 @@
      (printf "len: ~v\nhostname: ~v\nsrc-port: ~v\n" len hostname src-port)
      (define received (subbytes receive-buffer 0 len))
      #;(printf "received buffer: ~v\n" received)
-     (printf "decoded: ~e\n" (parse-osc-bytes received))
+     (printf "decoded: ~e\n" (bytes->osc-element received))
      (loop))))
 
 (define (send-command message)
