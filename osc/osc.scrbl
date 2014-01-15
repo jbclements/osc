@@ -1,7 +1,6 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          planet/scribble
           scribble/bnf)
 
 @title{@bold{OSC}: Open Sound Control Byte String Conversion}
@@ -9,9 +8,9 @@
 @author[(author+email "John Clements" "clements@racket-lang.org")]
 
 @(require (for-label racket
-                     (this-package-in main)))
+                     "main.rkt"))
 
-@defmodule/this-package[main]{This collection provides the means to translate
+@defmodule[osc]{This collection provides the means to translate
  to and from byte strings representing OSC (Open Sound Control) bundles and 
  messages.
  
