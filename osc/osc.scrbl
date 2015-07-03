@@ -1,7 +1,5 @@
-#lang scribble/doc
+#lang scribble/manual
 
-@(require scribble/manual
-          scribble/bnf)
 
 @title{@bold{OSC}: Open Sound Control Byte String Conversion}
 
@@ -13,6 +11,17 @@
 @defmodule[osc]{This collection provides the means to translate
  to and from byte strings representing OSC (Open Sound Control) bundles and 
  messages.
+
+ In OSC, the bytes you actually put on the wire represent an "element":
+
+ @racketgrammar[#:literals (osc-bundle osc-message list)
+                osc-element
+                (osc-bundle timestamp (list osc-element ...))
+                (osc-message address (list osc-value ...))]
+
+  A bundle is just a list of elements with a timestamp attached. What
+ if a nested element contains a different timestamp? Good question.
+
  
  @defproc[(osc-element->bytes [element osc-element?]) bytes?]{
  Given an osc element, produces the corresponding byte string.
@@ -57,19 +66,17 @@
  
  An OSC Element is either a bundle or a message.
  
- @racketgrammar[osc-element?
- osc-bundle?
- osc-message?]
- 
  }
  
- An OSC Bundle can contain other elements:
- 
- @defstruct*[osc-bundle ((timestamp osc-date?) (elements (listof osc-element?))) #:prefab]{Produce an OSC bundle.}
+ @defstruct*[osc-bundle ((timestamp osc-date?) (elements (listof osc-element?))) #:prefab]{
+ Represents a bundle of elements with a common timestamp.}
                        
  An OSC Message consists of an address and arguments:
  
- @defstruct*[osc-message ((address byte-string?) (values (listof osc-value?))) #:prefab]{Produce an OSC message.}
+ @defstruct*[osc-message ((address byte-string?) (values (listof osc-value?))) #:prefab]{
+ Essentially represents a remote procedure call. The @racket[address] is like
+  the name of the message--- @racket["start_note"], or
+ @racket["notify"], and the list of values are like the arguments.}
                        
  An OSC value is one of a number of different kinds of s-expressions. Let me know if you can see a 
  better way to document this:
