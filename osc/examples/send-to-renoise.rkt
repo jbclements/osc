@@ -1,8 +1,10 @@
 #lang racket
 
-;; Copyright 2012 John Clements (clements@racket-lang.org)
+;; Copyright 2012--2015 John Clements (clements@racket-lang.org)
 ;; released under Mozilla Public License 2.0
 
+;; don't test this file:
+(module test racket/base)
 
 (require racket/udp
          racket/runtime-path

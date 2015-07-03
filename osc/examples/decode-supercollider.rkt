@@ -24,7 +24,7 @@
     (error 'decode-d-recv "expected magic number #\"SCgf\""))
   (printf "file version: ~s\n"
           (integer-bytes->integer bytes #f #t 4 8))
-  ((parse-many (parse-synth-def)) bytes 8))
+  ((parse-many parse-synth-def) bytes 8))
 
 ;; a synth definition contains a name and a set of lists:
 (define (parse-synth-def bytes offset)
@@ -32,14 +32,11 @@
     (parse-synth-def/list bytes offset))
   (values (post-process-synth-def list-parsed) new-offset))
 
-;; parse a synth def, before postprocessing
-(define parse-synth-def/list
-  (join-parsers 
-   parse-pstring
-   (parse-many parse-float32)
-   (parse-many parse-float32)
-   (parse-many parse-parameter-name)
-   (parse-many parse-ugen-spec)))
+
+;; parse a parameter name
+(define parse-parameter-name
+  (join-parsers parse-pstring
+                parse-uint16))
 
 ;; enforce invariants:
 (define (post-process-synth-def def-as-list)
@@ -53,13 +50,6 @@
   ;; need to write all this stuff. After all, I'm not *implementing*
   ;; scsynth.
   def-as-list)
-
-
-
-;; parse a parameter name
-(define parse-parameter-name
-  (join-parsers parse-pstring
-                parse-uint16))
 
 ;; parse a unit generator spec
 (define (parse-ugen-spec bytes offset)
@@ -79,6 +69,15 @@
       (parse-n-things num-outputs parse-uint8))
      bytes offset2))
   (values (append header ins-outs) offset3))
+
+;; parse a synth def, before postprocessing
+(define parse-synth-def/list
+  (join-parsers 
+   parse-pstring
+   (parse-many parse-float32)
+   (parse-many parse-float32)
+   (parse-many parse-parameter-name)
+   (parse-many parse-ugen-spec)))
 
 ;; parse the input spec of a unit generator
 (define parse-input-spec

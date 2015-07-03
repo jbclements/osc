@@ -5,6 +5,12 @@
 
 ;; read libpcap files.
 
+;; don't test this file:
+(module test racket/base)
+
+;; interesting... looks like this is the code I used to capture the messages
+;; sent to scsynth on supercollider startup.
+
 (define (file->packets file)
   (define pcap-bytes (file->bytes file))
   
@@ -34,17 +40,24 @@
           [else empty])))
 
 
-(define packets (file->packets
-                 "/tmp/boo"#;"/Users/clements/only-to-scsynth"))
-
-(length packets)
-
 (define (packet-data packet)
   (unless (= (bitwise-and #xf (bytes-ref packet 4)) 5)
     (error 'packet-data "expected to see 5 in low bits of byte 4, got: ~v"
            (bytes-ref packet 4)))
   (subbytes packet 32 (bytes-length packet)))
 
+
+
+(define (not-status data)
+  (match data
+    [(osc-message #"/status" any) #f]
+    [else #t]))
+
+
+(define packets (file->packets
+                 "/tmp/boo"#;"/Users/clements/only-to-scsynth"))
+
+(length packets)
 
 (define packet-datas (map packet-data (map second packets)))
 
@@ -54,10 +67,6 @@
                  (printf "~v\n" i)
                  (bytes->osc-element d)))
 
-(define (not-status data)
-  (match data
-    [(osc-message #"/status" any) #f]
-    [else #t]))
 
 (define non-status (filter not-status parsed))
 

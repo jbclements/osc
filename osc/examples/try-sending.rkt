@@ -3,6 +3,8 @@
 ;; Copyright 2012 John Clements (clements@racket-lang.org)
 ;; released under a BSD license
 
+;; don't test this file:
+(module test racket/base)
 
 (require racket/udp
          racket/runtime-path
