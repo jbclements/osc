@@ -367,10 +367,7 @@
                test-message-1-bytes)))
 ;; test of timestamps... oh. Can't do that until we are sure about seconds.
 
-
-
-
-(osc-element->bytes 
+#;(osc-element->bytes
  (osc-message #"/abc/def"
               (list
                3 6 2.278 
