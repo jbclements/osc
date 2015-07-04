@@ -116,10 +116,16 @@
 
 ;; given an osc-address, produce the bytes version of it:
 (define (address->bytes address)
-  (cond [(bytes? address) address]
-        [else (apply
-               bytes-append
-               (for/list ([a address]) (bytes-append #"/" a)))]))
+  (match address
+    [(? bytes? address) address]
+    [(list (? bytes? b) ...)
+     (apply
+      bytes-append
+      (for/list ([a address]) (bytes-append #"/" a)))]
+    [other
+     (raise-argument-error 'address->bytes
+                           "byte-string or list of byte-strings"
+                           0 address)]))
 
 ;; returns a list containing a byte-string of length 
 ;; 1 and a pre-message
@@ -273,6 +279,8 @@
 
 (check-equal? (address->bytes #"/abc/def") #"/abc/def")
 (check-equal? (address->bytes (list #"abc" #"def")) #"/abc/def")
+  (check-exn #px"expected: byte-string or list of byte-strings"
+             (lambda () (address->bytes "/abc/def")))
 
 (check-equal? (osc-message->bytes #"/abc/def"
                                   (list

@@ -73,10 +73,10 @@
                        
  An OSC Message consists of an address and arguments:
  
- @defstruct*[osc-message ((address byte-string?) (values (listof osc-value?))) #:prefab]{
+ @defstruct*[osc-message ((address byte-string?) (args (listof osc-value?))) #:prefab]{
  Essentially represents a remote procedure call. The @racket[address] is like
-  the name of the message--- @racket["start_note"], or
- @racket["notify"], and the list of values are like the arguments.}
+  the name of the message--- @racket[#"/start_note"], or
+ @racket[#"/notify"], and the list of args are like the arguments.}
                        
  An OSC value is one of a number of different kinds of s-expressions. Let me know if you can see a 
  better way to document this:
