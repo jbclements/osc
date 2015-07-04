@@ -5,9 +5,9 @@
           (struct osc-message ([address (or/c bytes? (listof bytes?))]
                                [args (listof osc-value?)]))
           (struct osc-bundle ([timestamp osc-date?]
-                              [elements (listof osc-element?)]))
-          )
+                              [elements (listof osc-element?)])))
          osc-element?
+         osc-value?
          osc-date?
          osc-double?
          no-nul-bytes?
