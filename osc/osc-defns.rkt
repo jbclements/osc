@@ -1,6 +1,26 @@
 #lang racket
 
-(provide (all-defined-out))
+
+(provide (contract-out
+          (struct osc-message ([address (or/c bytes? (listof bytes?))]
+                               [args (listof osc-value?)]))
+          (struct osc-bundle ([timestamp osc-date?]
+                              [elements (listof osc-element?)]))
+          )
+         osc-element?
+         osc-date?
+         osc-double?
+         no-nul-bytes?
+         osc-symbol?
+         blob?
+         osc-char?
+         osc-color?
+         osc-midi?
+         osc-inf?
+         osc-array?
+         int32?
+         int64?
+         float32?)
 
 ;; an OSC-element is either an osc-message or an osc-bundle
 (struct osc-message (address args) #:prefab)
