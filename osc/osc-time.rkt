@@ -7,8 +7,14 @@
          "osc-defns.rkt")
 
 (provide (contract-out
+
+          ;; when in doubt, use these:
+          [milliseconds->osc-date (-> inexact-real? osc-date?)]
+          ;[osc-date->milliseconds (-> osc-date? inexact-real?)]
+          
           [seconds->osc-date
            (-> exact-integer? second-frac? osc-date?)]
+          
           [osc-date->seconds-and-frac
            (-> osc-date? (list/c exact-integer? second-frac?))]
           
@@ -37,6 +43,15 @@
 ;; seconds are measured since January 1, 1900, GMT, meaning
 ;; that they'll run out in 2036 or so. Oh well.
 (define OSC-EPOCH-SECONDS (find-seconds 0 0 0 1 1 1900 #f))
+
+;; convert an inexact number of milliseconds (as e.g. from
+;; (current-inexact-milliseconds) into an osc-date
+(define (milliseconds->osc-date s)
+  ;; could be data loss... on the order of ulps.
+  (define seconds (/ s 1000))
+  (define int-seconds (floor seconds))
+  (seconds->osc-date (inexact->exact int-seconds)
+                     (- seconds int-seconds)))
 
 ;; convert a number of seconds (as e.g. from (current-seconds))
 ;; and a fractional number of seconds into an osc-date
@@ -133,5 +148,17 @@
                                 (+ 0.5 (expt 0.5 8)))
                 (seconds->osc-date (find-seconds 2 4 13 27 3 1997) 
                                    (+ 0.5 (expt 0.5 8))))
+
+  (let ()
+    ;; accuracy of milliseconds methods
+    (define 96K-HALF-SAMPLE
+      (/ (expt 2 32) (* 96000 2)))
+    (define a (seconds->osc-date 1436122777 0.609791))
+    (define b (milliseconds->osc-date #i1436122777609.791))
+    (check-equal? (first a) (first b))
+    ;; check that the error is less than half a sample at 96KHz:
+    (check-= (second a) (second b) 96K-HALF-SAMPLE))
+
+  
 
   )

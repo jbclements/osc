@@ -118,6 +118,32 @@
 
  @section{OSC Date conversion}
 
+OSC represents dates using two 32-bit numbers, essentially equivalent to a fixed-point
+64-bit number with 32 bits before and 32 bits after the decimal point.
+
+Racket's @racket[(current-inexact-milliseconds)] represents time using a 64-bit
+floating point number of milliseconds. Since a 64-bit float spends some bits on
+exponent and sign, you might be concerned that this representation is insufficiently
+precise.
+
+Don't be.
+
+More specifically, a 64-bit float has approximately 52 bits of mantissa. Even if
+we use a full 32 to represent the seconds part, we're left with time increments
+of 2^{-20} seconds. At a sample rate of 44.1 KHz, this gives us
+precision of about 1/25 of a sample, which should be plenty.
+
+In other words, you should feel just fine about representing time using racket's
+inexact-milliseconds, and converting to osc-dates only when sending the messages.
+
+@defproc[(milliseconds->osc-date [milliseconds inexact-real?]) osc-date?]{
+Converts an inexact number representing milliseconds since UNIX epoch into
+an OSC date.}
+
+@defproc[(osc-date->milliseconds [osc-date osc-date?]) inexact-real?]{
+Converts an osc-date in the list-of-two-integers representation into
+an inexact number representing milliseconds since epoch.}
+
  @defproc[(seconds->osc-date [seconds exact-integer?] [frac inexact-real?]) osc-date?]{
  Converts a number of seconds (as e.g. from @racket[(current-seconds)]) and a fractional
  number of seconds into an osc date.}
