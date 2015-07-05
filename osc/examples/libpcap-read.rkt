@@ -11,6 +11,7 @@
 ;; interesting... looks like this is the code I used to capture the messages
 ;; sent to scsynth on supercollider startup.
 
+;; given a pcap file, return a list of packets
 (define (file->packets file)
   (define pcap-bytes (file->bytes file))
   
@@ -39,15 +40,14 @@
             (loop (+ offset 16 captured-len)))]
           [else empty])))
 
-
+;; extract the data portion of the packet
 (define (packet-data packet)
   (unless (= (bitwise-and #xf (bytes-ref packet 4)) 5)
     (error 'packet-data "expected to see 5 in low bits of byte 4, got: ~v"
            (bytes-ref packet 4)))
   (subbytes packet 32 (bytes-length packet)))
 
-
-
+;; is this message not a status message?
 (define (not-status data)
   (match data
     [(osc-message #"/status" any) #f]
@@ -55,19 +55,24 @@
 
 
 (define packets (file->packets
-                 "/tmp/boo"#;"/Users/clements/only-to-scsynth"))
+                 "/tmp/sonic-pi-4556-with-beep.pcap"
+                 ))
 
-(length packets)
+(printf "file contained ~a packets.\n" (length packets))
 
 (define packet-datas (map packet-data (map second packets)))
 
 
 (define parsed (for/list ([d packet-datas]
                      [i (in-naturals)])
-                 (printf "~v\n" i)
+                 #;(printf "~v\n" i)
                  (bytes->osc-element d)))
 
+(write-to-file parsed "/tmp/sonic-pi-parsed-scsynth.rktd")
 
+parsed
+
+#;(
 (define non-status (filter not-status parsed))
 
 (length non-status)
@@ -78,5 +83,5 @@
 
 (define actions (drop non-status (- (length non-status) 5)))
 
-(write-to-file actions "/tmp/actions.rktd")
+(write-to-file actions "/tmp/actions.rktd"))
 
