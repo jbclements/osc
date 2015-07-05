@@ -10,7 +10,7 @@
 
           ;; when in doubt, use these:
           [milliseconds->osc-date (-> inexact-real? osc-date?)]
-          ;[osc-date->milliseconds (-> osc-date? inexact-real?)]
+          [osc-date->milliseconds (-> osc-date? inexact-real?)]
           
           [seconds->osc-date
            (-> exact-integer? second-frac? osc-date?)]
@@ -52,6 +52,18 @@
   (define int-seconds (floor seconds))
   (seconds->osc-date (inexact->exact int-seconds)
                      (- seconds int-seconds)))
+
+;; convert an osc-date into an inexact number of
+;; milliseconds. This will lose data, but not important
+;; data.
+(define (osc-date->milliseconds osc-date)
+  (match osc-date
+    ['now (raise-type-error 'milliseconds->osc-date
+                            "non-'now' osc value"
+                            0 osc-date)]
+    [else (match (osc-date->seconds-and-frac osc-date)
+            [(list seconds frac)
+             (* 1000.0 (+ seconds frac))])]))
 
 ;; convert a number of seconds (as e.g. from (current-seconds))
 ;; and a fractional number of seconds into an osc-date
@@ -159,6 +171,9 @@
     ;; check that the error is less than half a sample at 96KHz:
     (check-= (second a) (second b) 96K-HALF-SAMPLE))
 
-  
+  ;; round-trip
+  (check-= (osc-date->milliseconds (milliseconds->osc-date #i1436122777609.791))
+           #i1436122777609.791
+           (/ 1.0 (* 96000 2)))
 
   )
