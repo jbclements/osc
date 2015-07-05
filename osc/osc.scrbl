@@ -22,7 +22,8 @@
   A bundle is just a list of elements with a timestamp attached. What
  if a nested element contains a different timestamp? Good question.
 
- 
+}
+
  @defproc[(osc-element->bytes [element osc-element?]) bytes?]{
  Given an osc element, produces the corresponding byte string.
  
@@ -113,13 +114,18 @@
  represents the number of seconds since January 1, 1900, and the second
  one forms the fractional part of a fixed-point representation. That is, the
  number @racket[#x80000000] represents half a second.
- 
- Note that I have not tried very hard to independently confirm the number of
- seconds between January 1, 1900, and the UNIX epoch, so my computation may
- very well disagree with that of other OSC implementations; let me know if
- I'm mistaken.
- }
-}
+  }
+
+ @section{OSC Date conversion}
+
+ @defproc[(seconds->osc-date [seconds exact-integer?] [frac inexact-real?]) osc-date?]{
+ Converts a number of seconds (as e.g. from @racket[(current-seconds)]) and a fractional
+ number of seconds into an osc date.}
+
+ @defproc[(osc-date->seconds-and-frac [osc-date osc-date?]) (list/c exact-integer? inexact-real?)]{
+ Converts an osc date into a list containing a number of seconds (as e.g. from @racket[(current-seconds)])
+ and a fractional number of seconds.}
+
 @section{Reporting Bugs}
 
 For Heaven's sake, report lots of bugs!
