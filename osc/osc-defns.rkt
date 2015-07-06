@@ -142,6 +142,8 @@
   
   (check-equal? (int32? 342) #t)
   (check-equal? (int32? 32324212142) #f)
-  (check-equal? (int32? -24) #t))
+  (check-equal? (int32? -24) #t)
+
+  (check-equal? (int32? (expt 2 39)) #f))
 
 

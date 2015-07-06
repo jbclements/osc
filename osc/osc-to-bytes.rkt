@@ -372,12 +372,9 @@
                (bytes 0 0 0 (bytes-length test-message-2-bytes))
                test-message-2-bytes
                (bytes 0 0 0 16)
-               test-message-1-bytes)))
-;; test of timestamps... oh. Can't do that until we are sure about seconds.
+               test-message-1-bytes))
 
-#;(osc-element->bytes
- (osc-message #"/abc/def"
-              (list
-               3 6 2.278 
-               #"froggy"
-               `(blob #"derple"))))
+  
+  (check-exn
+   #px"expected: osc-value"
+   (lambda () (osc-message #"/bogus" (list 34 (expt 2 39))))))
