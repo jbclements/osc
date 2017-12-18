@@ -1,7 +1,7 @@
 #lang scribble/manual
 
 
-@title{@bold{OSC}: Open Sound Control Byte String Conversion}
+@title{OSC: Open Sound Control Byte String Conversion}
 
 @author[(author+email "John Clements" "clements@racket-lang.org")]
 
