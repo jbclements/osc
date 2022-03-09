@@ -121,7 +121,13 @@
                             (+ offset 4 len)))
      (values (list 'blob bstr) (round-up-to-4
                                 (+ offset 4 len)))]
-    
+
+    [84 ;; T
+     (values #t offset)]
+
+    [70 ;; F
+     (values #f offset)]
+
     [other
      (error 'read-arg-of-type
             "unimplemented type char: ~v" other)]))
@@ -174,6 +180,12 @@
   (check-equal? (bytes->osc-element 
                  #"/ab/dob\0,bb\0\0\0\0\00512345\0\0\0\0\0\0\00567890\0\0\0")
                 (osc-message #"/ab/dob" `((blob #"12345") (blob #"67890"))))
+
+  (check-equal? (bytes->osc-element #"/true\0\0\0,T\0\0")
+                (osc-message #"/true" (list #t)))
+
+  (check-equal? (bytes->osc-element #"/false\0\0,F\0\0")
+                (osc-message #"/false" (list #f)))
   
   (define test-message-1 (osc-message #"/a/b" (list 257)))
   (define test-message-2 (osc-message #"/z" (list #"woohoo" '(blob #"z"))))
