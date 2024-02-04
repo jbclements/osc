@@ -43,7 +43,7 @@
  }
  
  @defproc[(bytes->osc-element (bytes bytes?)) osc-element?]{Given a byte
- string, produces the corresponding byte string.
+ string, produces the corresponding OSC element.
  
  Here's an example of using it:
  
